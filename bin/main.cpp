@@ -1,29 +1,65 @@
 #include <SDL2/SDL.h>
 #include <stdio.h>
+#include "stuff.hpp"
+
+bool CGame::init () {
+    lastTime = 0;
+    dt = 0;
+    SDL_Init (SDL_INIT_EVERYTHING);
+
+    mainWindow = SDL_CreateWindow("Hello, World!", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 640, 480, SDL_WINDOW_SHOWN);
+    mainRenderer = SDL_CreateRenderer(mainWindow, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+
+    auto newThing = std::make_shared<CGrowingBox>();
+    manager->registerNew("GrowBox", newThing);
+
+    return true;
+}
+
+bool CGame::isStopping () {
+    if (SDL_GetTicks() > 3000)
+        return true;
+    else
+        return false;
+}
+
+bool CGame::run () {
+
+    uint32_t curTime = SDL_GetTicks();
+    dt = curTime - lastTime;
+    lastTime = curTime;
+
+    SDL_SetRenderDrawColor(mainRenderer, 156, 189, 15, 255);
+    SDL_RenderClear(mainRenderer);
+
+    auto growBox = manager->getEntityByName("GrowBox");
+    growBox->draw->draw(mainRenderer);
+
+    SDL_RenderPresent(mainRenderer);
+
+    return true;
+}
+
+
+CGame::~CGame () {
+    SDL_DestroyRenderer(mainRenderer);
+    SDL_DestroyWindow(mainWindow);
+    SDL_Quit();
+}
+
 
 int main (int argc, char **argv)
 {
-    SDL_Init (SDL_INIT_EVERYTHING);
+    (void) argc;
+    (void) argv;
 
-    SDL_Window *win = SDL_CreateWindow("Hello, World!", 100, 100, 640, 480, SDL_WINDOW_SHOWN);
-    SDL_Renderer *ren = SDL_CreateRenderer(win, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
-    
-    SDL_SetRenderDrawColor(ren, 156, 189, 15, 255);
-    SDL_RenderClear(ren);
+    CGame *theGame = new CGame();
+    theGame->init();
 
-    SDL_Rect rect;
-    rect.x = 0;
-    rect.y = 0;
-    rect.w = 50;
-    rect.h = 50;
+    while (!theGame->isStopping()) {
+        theGame->run();
+    }
 
-    SDL_SetRenderDrawColor(ren, 0, 255, 0, 255);
-    SDL_RenderDrawRect(ren, &rect);
-
-    SDL_RenderPresent(ren);
-    SDL_Delay(3000);
-
-    SDL_Quit();
-
+    delete theGame;
     return 0;
 }
